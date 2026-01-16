@@ -6,3 +6,5 @@
 - recheck sorting language in StartNewHand function
 - changed minimum number of players required to start game to 3
 - player.go => updatePlayerState function
+- shifted on linux
+- nothing new
