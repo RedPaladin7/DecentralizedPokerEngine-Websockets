@@ -2,7 +2,10 @@ package game
 
 import (
 	"fmt"
+	"sort"
 
+	"github.com/RedPaladin7/DecentralizedPokerEngine-Websockets.git/internal/crypto"
+	"github.com/RedPaladin7/DecentralizedPokerEngine-Websockets.git/internal/deck"
 	"github.com/RedPaladin7/DecentralizedPokerEngine-Websockets.git/internal/protocol"
 	"github.com/sirupsen/logrus"
 )
@@ -76,13 +79,55 @@ func (g *Game) SetPlayerReady(addr string) error {
 	}, g.getOtherPlayers()...)
 
 	myID := g.playerStates[g.listenAddr].RotationID
-	if len(g.getReadyPlayers()) >= 2 && g.currentStatus == GameStatusWaiting && g.currentDealerID == myID {
+	if len(g.getReadyPlayers()) >= 3 && g.currentStatus == GameStatusWaiting && g.currentDealerID == myID {
 		g.StartNewHand()
 	}
 	return nil
 }
 
 func (g *Game) StartNewHand() {
-	
+	activeReadyPlayers := g.getReadyActivePlayers()
+	if len(activeReadyPlayers) < 3 {
+		g.setStatus(GameStatusWaiting)
+		logrus.Warn("Not enough players to start a new hand")
+		return 
+	}
+	logrus.Info("===Starting New Hand===")
+
+	g.rotationMap = make(map[int]string)
+	g.nextRotationID = 0
+	g.myHand = make([]deck.Card, 0, 2)
+	g.communityCards = make([]deck.Card, 0, 5)
+	g.lastRaiseAmount = BigBlind 
+	g.currentPot = 0
+	g.highestBet = 0
+	g.sidePots = []SidePot{}
+	g.revealedKeys = make(map[string]*crypto.CardKeys)
+	g.foldedPlayerKeys = make(map[string]*crypto.CardKeys)
+
+	// recheck the sorting logic 
+	sort.Strings(activeReadyPlayers)
+	for _, addr := range activeReadyPlayers {
+		state := g.playerStates[addr]
+		state.RotationID = g.nextRotationID
+		state.IsFolded = false 
+		state.CurrentRoundBet = 0
+		state.TotalBetThisHand = 0 
+		state.IsAllIn = false 
+		g.rotationMap[state.RotationID] = addr
+		g.nextRotationID++
+	}
+	g.advanceDealer()
+	g.postBlinds()
+	g.setStatus(GameStatusDealing)
+	g.InitiateShuffleAndDeal()
 }
+
+func (g *Game) postBlinds() {
+	sbID := g.getNextActivePlayerID(g.currentDealerID)
+	sbAddr :+ g.rotationMap[sbID]
+	g.upd
+}
+
+func (g *Game) updatePlayerState(addr string, action PlayerAction, value int)
 

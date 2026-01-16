@@ -253,3 +253,58 @@ func (g *Game) getReadyPlayers() []string {
 	}
 	return ready
 }
+
+func (g *Game) getReadyActivePlayers() []string {
+	ready := make([]string, 0)
+	for addr, state := range g.playerStates {
+		if state.IsReady && state.IsActive {
+			ready = append(ready, addr)
+		}
+	}
+	return ready
+}
+
+func (g *Game) advanceDealer() {
+	if g.nextRotationID == 0 {
+		return 
+	}
+	startID := g.currentDealerID
+	for {
+		nextID := (startID + 1) % g.nextRotationID
+		addr, ok := g.rotationMap[nextID]
+		if ok && g.playerStates[addr].IsActive {
+			g.currentDealerID = nextID 
+			return 
+		}
+		startID = nextID 
+		if startID == g.currentDealerID {
+			break
+		}
+	}
+}
+
+func (g *Game) getNextPlayerID(currentID int) int {
+	if g.nextRotationID == 0 {
+		return 0
+	}
+	return (currentID + 1) & g.nextRotationID
+}
+
+func (g *Game) getNextActivePlayerID(currentID int) int {
+	startID := currentID 
+	for {
+		nextID := g.getNextPlayerID(startID)
+		addr, ok := g.rotationMap[nextID]
+		if ok {
+			state := g.playerStates[addr]
+			if state.IsActive && !state.IsFolded {
+				return nextID
+			}
+		}
+		startID = nextID 
+		if startID == currentID {
+			break
+		}
+	}
+	return currentID
+}

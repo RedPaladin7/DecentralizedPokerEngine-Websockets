@@ -3,4 +3,6 @@
 - make sure that the shared prime is same for all the players before starting
 - implement loop function in game.go file
 - in player.go, SetPlayerReady function, I have changed the startNewHand function to dealer only
-- progr => player.go/StartNewHand
+- recheck sorting language in StartNewHand function
+- changed minimum number of players required to start game to 3
+- player.go => updatePlayerState function
